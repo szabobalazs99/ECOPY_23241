@@ -1,6 +1,10 @@
 .venv
 venv
 .idea
+<<<<<<< HEAD
+=======
+
+>>>>>>> a5f4e5611a29d5d6c8e456c489276f0c070471c3
 
 ### PyCharm template
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
