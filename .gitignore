@@ -1,8 +1,9 @@
 .venv
 venv
 .idea
-<<<<<<< HEAD
-=======
+notebooks/.*
+src/*/.*
+tests/.*
 
 >>>>>>> a5f4e5611a29d5d6c8e456c489276f0c070471c3
 
