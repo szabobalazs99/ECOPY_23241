@@ -56,7 +56,7 @@ def element_wise_sum(input_list1, input_list2):
 	return result
 
 def subset_of_list(input_list, start_index, end_index):
-    return input_list[start_index:end_index]
+    return input_list[start_index:end_index+1]
 
 def every_nth(input_list, step_size):
     return input_list[::step_size]
@@ -81,3 +81,47 @@ def remove_element_by_index(input_list, index):
 
 def multiply_every_element(input_list, multiplier):
     return [x * multiplier for x in input_list]
+
+def remove_key(input_dict, key):
+    if key in input_dict:
+        del input_dict[key]
+    return input_dict
+
+def sort_by_key(input_dict):
+    return dict(sorted(input_dict.items()))
+
+def sum_in_dict(input_dict):
+    return float(sum(input_dict.values()))
+
+def merge_two_dicts(input_dict1, input_dict2):
+    merged_dict = input_dict1.copy()
+    merged_dict.update(input_dict2)
+    return merged_dict
+
+def merge_dicts(*dicts):
+    merged_dict = {}
+    for d in dicts:
+        merged_dict.update(d)
+    return merged_dict
+
+def sort_list_by_parity(input_list):
+    result = {'even': [], 'odd': []}
+    for num in input_list:
+        result['even'].append(num) if num % 2 == 0 else result['odd'].append(num)
+    return result
+
+def mean_by_key_value(input_dict):
+    result_dict = {}
+    for key, value_list in input_dict.items():
+        mean_value = sum(value_list) / len(value_list)
+        result_dict[key] = mean_value
+    return result_dict
+
+def count_frequency(input_list):
+    frequency = {}
+    for item in input_list:
+        if item in frequency:
+            frequency[item] += 1
+        else:
+            frequency[item] = 1
+    return frequency
