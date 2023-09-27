@@ -109,3 +109,4 @@ class ParetoDistribution:
             return [self.mean(), self.variance(), self.skewness(), self.ex_kurtosis()]
         except:
             raise Exception("Moments undefined")
+        
