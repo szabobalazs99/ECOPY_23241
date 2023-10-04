@@ -143,3 +143,93 @@ class CauchyDistribution:
             return [self.mean(), self.variance(), self.skewness(), self.ex_kurtosis()]
         except:
             raise Exception("Moments undefined")
+
+import random
+from typing import List
+import math
+import pyerf
+import scipy.special as special
+
+
+class LogisticDistribution:
+    def __init__(self, rand, loc, scale):
+        self.rand = rand
+        self.location = loc
+        self.scale = scale
+
+    def pdf(self, x):
+        z = (x - self.location) / self.scale
+        e = math.exp(-z)
+        return e / (self.scale * (1 + e)**2)
+
+    def cdf(self, x):
+        z = -(x - self.location) / self.scale
+        return 1 / (1 + self.scale * math.exp(z))
+
+    def ppf(self, p):
+        if 0 < p < 1:
+            z = pyerf.erfinv(2 * p - 1) * math.sqrt(2)
+            return self.location + z * self.scale
+        else:
+            raise ValueError("Probability p must be in the range (0, 1).")
+
+    def gen_rand(self, _):
+        return self.location + self.scale * math.log(self.rand.random() / (1 - self.rand.random()))
+
+    def mean(self):
+        return self.location
+
+    def variance(self):
+        return (math.pi ** 2) * self.scale ** 2 / 3
+
+    def skewness(self):
+        return 0
+
+    def ex_kurtosis(self):
+        return 1.2
+
+    def mvsk(self):
+        try:
+            return [self.mean(), self.variance(), self.skewness(), self.ex_kurtosis()]
+        except:
+            raise Exception("Moments undefined")
+
+
+class ChiSquaredDistribution:
+    def __init__(self, rand, dof):
+        self.rand = rand
+        self.dof = dof
+
+    def pdf(self, x):
+        if x < 0:
+            return 0
+        coefficient = 1 / (2 ** (self.dof / 2) * math.gamma(self.dof / 2))
+        return coefficient * x ** (self.dof / 2 - 1) * math.exp(-x / 2)
+
+    def cdf(self, x):
+        return special.gammainc(self.dof / 2, x / 2)
+
+    def ppf(self, p):
+        return 2 * special.gammaincinv(self.dof / 2, p)
+
+    def gen_rand(self):
+        sum_of_squares = sum(self.rand.random() ** 2 for _ in range(self.dof))
+        return sum_of_squares
+
+    def mean(self):
+        return self.dof
+
+    def variance(self):
+        return 2 * self.dof
+
+    def skewness(self):
+        return math.sqrt(8 / self.dof)
+
+    def ex_kurtosis(self):
+        return 12 / self.dof
+
+    def mvsk(self):
+        try:
+            return [self.mean(), self.variance(), self.skewness(), self.ex_kurtosis()]
+        except:
+            raise Exception("Moments undefined")
