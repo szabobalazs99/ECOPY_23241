@@ -160,21 +160,20 @@ class LogisticDistribution:
     def pdf(self, x):
         z = (x - self.location) / self.scale
         e = math.exp(-z)
-        return e / (self.scale * (1 + e)**2)
+        return e / ((1 + e) ** 2 * self.scale)
 
     def cdf(self, x):
-        z = -(x - self.location) / self.scale
-        return 1 / (1 + self.scale * math.exp(z))
+        return 1 / (1 + math.exp(-(x - self.location) / self.scale))
 
     def ppf(self, p):
         if 0 < p < 1:
-            z = pyerf.erfinv(2 * p - 1) * math.sqrt(2)
+            z = scipy.special.erfinv(2 * p - 1) * math.sqrt(2)
             return self.location + z * self.scale
         else:
             raise ValueError("Probability p must be in the range (0, 1).")
 
-    def gen_rand(self, _):
-        return self.location + self.scale * math.log(self.rand.random() / (1 - self.rand.random()))
+    def gen_rand(self):
+        return self.location - self.scale * math.log(1 / self.rand.random() - 1)
 
     def mean(self):
         return self.location
@@ -189,10 +188,7 @@ class LogisticDistribution:
         return 1.2
 
     def mvsk(self):
-        try:
-            return [self.mean(), self.variance(), self.skewness(), self.ex_kurtosis()]
-        except:
-            raise Exception("Moments undefined")
+        return [self.mean(), self.variance(), self.skewness(), self.ex_kurtosis()]
 
 
 class ChiSquaredDistribution:
@@ -213,7 +209,7 @@ class ChiSquaredDistribution:
         return 2 * special.gammaincinv(self.dof / 2, p)
 
     def gen_rand(self):
-        sum_of_squares = sum(self.rand.random() ** 2 for _ in range(self.dof))
+        sum_of_squares = sum(self.rand.normalvariate(0, 1) ** 2 for _ in range(int(self.dof)))
         return sum_of_squares
 
     def mean(self):
