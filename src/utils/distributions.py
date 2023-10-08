@@ -31,7 +31,7 @@ class UniformDistribution:
         else:
             raise ValueError("p must be between 0 and 1")
 
-    def gen_random(self):
+    def gen_rand(self):
         return self.rand.uniform(self.a, self.b)
 
     def mean(self):
@@ -41,15 +41,17 @@ class UniformDistribution:
         return (self.a + self.b) / 2
 
     def variance(self):
+        if self.a == self.b:
+            raise Exception("Moment undefined")
         # NOTE: test is faulty
         return (math.pow((self.b - self.a), 2)) / 12
 
     def skewness(self):
         std_dev = math.sqrt(self.variance())
-        return 3 * (self.mean() - self.median()) / std_dev  # constant 0
+        return 3 * (self.mean() - self.median()) / std_dev
 
     def ex_kurtosis(self):
-        return -6 / 5  # constant value of -1.2
+        return -6 / 5
 
     def mvsk(self):
         if self.a == self.b or self.a >= self.b:
@@ -64,9 +66,9 @@ class NormalDistribution:
         self.scale = scale
 
     def pdf(self, x):
-        # NOTE: exceeds error by 0.003
-        coeff = 1 / math.sqrt(2 * math.pi * self.scale)
-        exponent = -0.5 * (((x - self.loc) ** 2) / (2 * self.scale))
+        sd = math.sqrt(self.scale)
+        coeff = 1 / (sd * math.sqrt(2 * math.pi))
+        exponent = -((x - self.loc) ** 2) / (2 * sd ** 2)
         return coeff * math.exp(exponent)
 
     def cdf(self, x):
@@ -79,7 +81,7 @@ class NormalDistribution:
         else:
             raise ValueError("p must be in the range (0, 1)")
 
-    def gen_random(self):
+    def gen_rand(self):
         return self.loc + self.scale * math.sqrt(-2 * math.log(self.rand.random())) * math.cos(
             2 * math.pi * self.rand.random())
 
@@ -120,7 +122,7 @@ class CauchyDistribution:
         else:
             raise ValueError("p must be in the range (0, 1)")
 
-    def gen_random(self):
+    def gen_rand(self):
         return self.loc + self.scale * math.tan(math.pi * (self.rand.random() - 0.5))
 
     def mean(self):
@@ -166,11 +168,14 @@ class LogisticDistribution:
         return 1 / (1 + math.exp(-(x - self.location) / self.scale))
 
     def ppf(self, p):
-        if 0 < p < 1:
-            z = scipy.special.erfinv(2 * p - 1) * math.sqrt(2)
-            return self.location + z * self.scale
-        else:
-            raise ValueError("Probability p must be in the range (0, 1).")
+        if p < 0 or p > 1:
+            raise ValueError("A valószínűségi értéknek az [0, 1] tartományban kell lennie.")
+        if p == 0:
+            return float("-inf")
+        if p == 1:
+            return float("inf")
+        ppf_value = self.location + self.scale * math.log(p / (1 - p))
+        return ppf_value
 
     def gen_rand(self):
         return self.location - self.scale * math.log(1 / self.rand.random() - 1)
@@ -209,8 +214,8 @@ class ChiSquaredDistribution:
         return 2 * special.gammaincinv(self.dof / 2, p)
 
     def gen_rand(self):
-        sum_of_squares = sum(self.rand.normalvariate(0, 1) ** 2 for _ in range(int(self.dof)))
-        return sum_of_squares
+        u = self.rand.uniform(0, 1)
+        return self.ppf(u)
 
     def mean(self):
         return self.dof

@@ -24,12 +24,9 @@ class LaplaceDistribution:
         else:
             return self.loc - self.scale * math.log(2 - 2 * p)
 
-    def gen_rand(self):
-        u = self.rand.random()
-        if u < 0.5:
-            return self.loc + self.scale * math.log(2 * u)
-        else:
-            return self.loc - self.scale * math.log(2 - 2 * u)
+    def gen_random(self):
+        return self.loc + self.scale * math.sqrt(-2 * math.log(self.rand.random())) * math.cos(
+            2 * math.pi * self.rand.random())
 
     def mean(self):
         return self.loc
@@ -38,19 +35,16 @@ class LaplaceDistribution:
         return self.loc
 
     def variance(self):
-        return 2 * self.scale ** 2
+        return self.scale
 
     def skewness(self):
-        return 0.0
+        return 0.0  # The skewness of a normal distribution is always 0
 
     def ex_kurtosis(self):
-        return 3.0
+        return 0.0  # The kurtosis of a normal distribution is always 0
 
     def mvsk(self):
-        try:
-            return [self.mean(), self.variance(), self.skewness(), self.ex_kurtosis()]
-        except:
-            raise Exception("Moments undefined")
+        return [self.mean(), self.variance(), self.skewness(), self.ex_kurtosis()]
 
 
 class ParetoDistribution:
