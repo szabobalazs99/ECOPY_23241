@@ -24,12 +24,12 @@ def avg_goal(input_df):
     return input_df['Goals'].mean()
 
 
-def countries_over_six(input_df):
-    return input_df[input_df['Goals'] >= 6]
+def countries_over_five(input_df):
+    return input_df[input_df['Goals'] >= 6][['Team']]
 
 
 def countries_starting_with_g(input_df):
-    return input_df[input_df['Team'].str.startswith('G')]
+    return input_df[input_df['Team'].str.startswith('G')]['Team']
 
 
 def first_seven_columns(input_df):
@@ -47,26 +47,23 @@ def sliced_view(input_df, columns_to_keep, column_to_filter, rows_to_keep):
     return filtered_df
 
 
-def generate_quartile(input_df):
+def generate_quarters(input_df):
     copy_df = input_df.copy()
-    copy_df['Quartile'] = pd.cut(copy_df['Goals'], bins=[-1, 2, 4, 5, 12], labels=[4, 3, 2, 1])
+    copy_df['Quartile'] = pd.cut(copy_df['Goals'], bins=[-1, 2, 4, 5, 12], labels=[4, 3, 2, 1]).astype('int64')
     return copy_df
 
 
 def average_yellow_in_quartiles(input_df):
     copy_df = input_df.copy()
     avg_yellow_in_quartiles = copy_df.groupby('Quartile')['Passes'].mean().reset_index()
-    avg_yellow_in_quartiles.rename(columns={'Passes': 'Average Passes'}, inplace=True)
+    avg_yellow_in_quartiles.drop('Quartile', axis='columns')
 
-    return avg_yellow_in_quartiles
+    return avg_yellow_in_quartiles['Passes']
 
 
 def minmax_block_in_quartile(input_df):
     copy_df = input_df.copy()
-    minmax_blocks = copy_df.groupby('Quartile')['Blocks'].agg(['min', 'max']).reset_index()
-    minmax_blocks.rename(columns={'min': 'Min Block', 'max': 'Max Block'}, inplace=True)
-
-    return minmax_blocks
+    return copy_df.groupby('Quartile')['Blocks'].agg(['min', 'max']).reset_index(drop=True)
 
 
 def scatter_goals_shots(input_df):
