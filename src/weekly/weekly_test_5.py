@@ -4,7 +4,6 @@ from typing import List, Dict
 import matplotlib
 import matplotlib.pyplot as plt
 
-food = pd.read_csv("../../data/chipotle.tsv", sep="\t")
 
 
 def change_price_to_float(input_df):
@@ -34,15 +33,16 @@ def avg_price(input_df):
 def unique_items_over_ten_dollars(input_df):
     copy_df = input_df.copy()
     filtered_df = copy_df[copy_df['item_price'] > 10]
-    return filtered_df.drop_duplicates(subset=['item_name', 'choice_description', 'item_price'])
+    filtered_df2 = filtered_df.drop_duplicates(subset=['item_name', 'choice_description', 'item_price'])
+    return filtered_df2.drop(['order_id', 'quantity'], axis='columns')
 
 
 def items_starting_with_s(input_df):
     copy_df = input_df.copy()
     filtered_df = copy_df[copy_df['item_name'].str.startswith('S')]
 
-    unique_items = filtered_df['item_name'].unique()
-    return pd.DataFrame({'item_name': unique_items})
+    result = filtered_df['item_name'].unique()
+    return pd.Series(result, name='item_name')
 
 
 def first_three_columns(input_df):
@@ -54,16 +54,15 @@ def every_column_except_last_two(input_df):
 
 
 def sliced_view(input_df, columns_to_keep, column_to_filter, rows_to_keep):
-    copy_df = input_df.copy()
-    filtered_df = copy_df[columns_to_keep]
-    return filtered_df[filtered_df[column_to_filter].isin(rows_to_keep)]
+    filtered_df = input_df[input_df[column_to_filter].isin(rows_to_keep)]
+    return filtered_df[columns_to_keep]
 
 
 def generate_quartile(input_df):
     copy_df = input_df.copy()
     quartile_labels = ['low-cost', 'medium-cost', 'high-cost', 'premium']
     quartile_bins = [0, 9.99, 19.99, 29.99, float('inf')]
-    copy_df['Quartile'] = pd.cut(input_df['item_price'], bins=quartile_bins, labels=quartile_labels)
+    copy_df['Quartile'] = pd.cut(input_df['item_price'], bins=quartile_bins, labels=quartile_labels).astype('object')
     return copy_df
 
 
@@ -71,12 +70,12 @@ def average_price_in_quartiles(input_df):
     copy_df = input_df.copy()
     avg_price_in_quartiles = copy_df.groupby('Quartile')['item_price'].mean().reset_index()
 
-    return avg_price_in_quartiles[['item_price']]
+    return avg_price_in_quartiles['item_price']
 
 
 def minmaxmean_price_in_quartile(input_df):
     copy_df = input_df.copy()
-    minmax_blocks = copy_df.groupby('Quartile')['item_price'].agg(['min', 'max']).reset_index()
+    minmax_blocks = copy_df.groupby('Quartile')['item_price'].agg(['min', 'max', 'mean']).reset_index(drop=True)
     return minmax_blocks
 
 
