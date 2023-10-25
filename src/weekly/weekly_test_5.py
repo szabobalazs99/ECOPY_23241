@@ -5,7 +5,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 
-
 def change_price_to_float(input_df):
     copy_df = input_df.copy()
 
