@@ -51,78 +51,62 @@ class LinearRegressionSM:
 
 
 class LinearRegressionNP:
-    def __init__(self, left_hand_side: pd.DataFrame, right_hand_side: pd.DataFrame):
+    def __init__(self, left_hand_side, right_hand_side):
         self.left_hand_side = left_hand_side
         self.right_hand_side = right_hand_side
         self._model = None
 
     def fit(self):
-        X = self.right_hand_side
-        X = pd.concat([pd.Series(1, index=X.index, name='Intercept'), X], axis=1)
+        X = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
         y = self.left_hand_side
         beta = np.linalg.inv(X.T @ X) @ X.T @ y
-        residuals = y - X @ beta
-        residual_variance = np.var(residuals, ddof=X.shape[1])
-        total_variance = np.var(y, ddof=X.shape[0])
-        rsquared = 1 - residuals.var() / total_variance
-        n = X.shape[0]
-        k = X.shape[1] - 1
-        adjusted_rsquared = 1 - (1 - rsquared) * (n - 1) / (n - k - 1)
-        self._model = {
-            'coefficients': beta,
-            'residuals': residuals,
-            'rsquared': rsquared,
-            'adjusted_rsquared': adjusted_rsquared,
-            'residual_variance': residual_variance
-        }
+        self.beta = beta
 
     def get_params(self):
-        if self._model is not None:
-            beta_coefficients = self._model['coefficients']
-            return pd.Series(beta_coefficients, name='Beta coefficients')
-        else:
-            return None
+        return pd.Series(self.beta, name='Beta coefficients')
 
     def get_pvalues(self):
-        if self._model is not None:
-            residuals = self._model['residuals']
-            residual_variance = self._model['residual_variance']
-            X = self.right_hand_side
-            X = pd.concat([pd.Series(1, index=X.index, name='Intercept'), X], axis=1)
-            n = X.shape[0]
-            k = X.shape[1] - 1
-            sse = residuals.T @ residuals
-            standard_errors = np.sqrt(np.diag(sse * np.linalg.inv(X.T @ X) * residual_variance))
-            t_statistic = self._model['coefficients'] / standard_errors
-            p_values = 2 * (1 - t.cdf(np.abs(t_statistic), df=n - k - 1))
-            p_values = pd.Series(np.minimum(p_values, 1 - p_values) * 2, name='P-values for the corresponding coefficients')
-            return p_values
-        else:
-            return None
+        X = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
+        y = self.left_hand_side
+        n, k = X.shape
+        beta = self.beta
+        H = X @ np.linalg.inv(X.T @ X) @ X.T
+        residuals = y - X @ beta
+        residual_variance = (residuals @ residuals) / (n - k)
+        standard_errors = np.sqrt(np.diagonal(residual_variance * np.linalg.inv(X.T @ X)))
+        t_statistics = beta / standard_errors
+        df = n - k
+        p_values = [2 * (1 - t.cdf(abs(t_stat), df)) for t_stat in t_statistics]
+        p_values = pd.Series(p_values, name="P-values for the corresponding coefficients")
+        return p_values
 
-    def get_wald_test_result(self, R: List[List[float]]):
-        if self._model is not None:
-            beta = self._model['coefficients']
-            n = self.right_hand_side.shape[0]
-            k = self.right_hand_side.shape[1]
-            df_R = len(R)
-            df_E = n - k
-            r = np.array(R)
-            wald_value = (r @ beta) @ np.linalg.inv(r @ np.linalg.inv(self._model['residual_variance'] * np.eye(n - k)) @ r.T)
-            p_value = 1 - f.cdf(wald_value, df_R, df_E)
-            result = f"Wald: {wald_value:.3f}, p-value: {p_value:.3f}"
-            return result
-        else:
-            return None
+    def get_wald_test_result(self, R):
+        X = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
+        y = self.left_hand_side
+        beta = self.beta
+        residuals = y - X @ beta
+        r_matrix = np.array(R)
+        r = r_matrix @ beta
+        n = len(self.left_hand_side)
+        m, k = r_matrix.shape
+        sigma_squared = np.sum(residuals ** 2) / (n - k)
+        H = r_matrix @ np.linalg.inv(X.T @ X) @ r_matrix.T
+        wald = (r.T @ np.linalg.inv(H) @ r) / (m * sigma_squared)
+        p_value = 1 - f.cdf(wald, dfn=m, dfd=n - k)
+        return f'Wald: {wald:.3f}, p-value: {p_value:.3f}'
 
     def get_model_goodness_values(self):
-        if self._model is not None:
-            rsquared = self._model['rsquared']
-            adjusted_rsquared = self._model['adjusted_rsquared']
-            result = f"Centered R-squared: {rsquared:.3f}, Adjusted R-squared: {adjusted_rsquared:.3f}"
-            return result
-        else:
-            return None
+        X = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
+        y = self.left_hand_side
+        n, k = X.shape
+        beta = self.beta
+        y_pred = X @ beta
+        ssr = np.sum((y_pred - np.mean(y)) ** 2)
+        sst = np.sum((y - np.mean(y)) ** 2)
+        centered_r_squared = ssr / sst
+        adjusted_r_squared = 1 - (1 - centered_r_squared) * (n - 1) / (n - k)
+        result = f"Centered R-squared: {centered_r_squared:.3f}, Adjusted R-squared: {adjusted_r_squared:.3f}"
+        return result
 
 
 
