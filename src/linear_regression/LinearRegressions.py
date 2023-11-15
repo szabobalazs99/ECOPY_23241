@@ -2,7 +2,7 @@ import pandas as pd
 import statsmodels.api as sm
 import numpy as np
 from scipy.stats import t, f
-from typing import List
+from typing import List, Union
 
 
 class LinearRegressionSM:
@@ -109,4 +109,42 @@ class LinearRegressionNP:
         return result
 
 
+class LinearRegressionGLS:
+    def __init__(self, left_hand_side: pd.DataFrame, right_hand_side: pd.DataFrame):
+        self.left_hand_side = left_hand_side
+        self.right_hand_side = right_hand_side
 
+    def fit(self):
+        X = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
+        self.X = X
+        beta_hat = np.linalg.inv(X.T @ X) @ X.T @ self.left_hand_side
+        residuals = self.left_hand_side - X @ beta_hat
+        squared_residuals = residuals ** 2
+        self.squared_residuals = squared_residuals
+        V_inv = np.diag(1 / np.sqrt(squared_residuals))
+        self.V_inv = V_inv
+        self.beta_hat_gls = np.linalg.inv(X.T @ V_inv @ X) @ X.T @ V_inv @ self.left_hand_side
+
+    def get_params(self):
+        beta_names = [f'Beta_{i}' for i in range(len(self.beta_hat_gls))]
+        return pd.Series(self.beta_hat_gls, index=beta_names, name='Beta coefficients')
+
+    def get_pvalues(self):
+        dof = len(self.right_hand_side) - len(self.beta_hat_gls)
+        t_values = self.beta_hat_gls / np.sqrt(np.diag(np.linalg.inv(self.X.T @ self.V_inv @ self.X)) * (np.sum((self.X - self.X.mean(axis=0)) ** 2, axis=0) / dof))
+        p_values = [2 * min(t.cdf(-np.abs(t_val), dof), t.cdf(np.abs(t_val), dof)) for t_val in t_values]
+        return pd.Series(p_values, index=[f'P-value_{i}' for i in range(len(self.beta_hat_gls))], name='P-values for the corresponding coefficients')
+
+    def get_wald_test_result(self, R: List[List[float]]):
+        num_constraints = len(R)
+        q = len(self.right_hand_side) - len(self.beta_hat_gls)
+        F_value = ((np.array(R) @ self.beta_hat_gls).T @ np.linalg.inv(np.array(R) @ np.linalg.inv(self.X.T @ self.V_inv @ self.X) @ np.array(R).T) @ (np.array(R) @ self.beta_hat_gls)) / num_constraints
+        p_value = 1 - f.cdf(F_value, num_constraints, q)
+        return f'Wald: {F_value:.3f}, p-value: {p_value:.3f}'
+
+    def get_model_goodness_values(self):
+        SSR = np.sum((np.log(self.squared_residuals) - np.mean(np.log(self.squared_residuals))) ** 2)
+        SST = np.sum((np.log(self.squared_residuals) - np.mean(np.log(self.left_hand_side))) ** 2)
+        R_squared = SSR / SST
+        adj_R_squared = 1 - (1 - R_squared) * ((len(self.left_hand_side) - 1) / (len(self.left_hand_side) - len(self.beta_hat_gls) - 1))
+        return f'Centered R-squared: {R_squared:.3f}, Adjusted R-squared: {adj_R_squared:.3f}'
